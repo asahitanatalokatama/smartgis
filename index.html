@@ -202,12 +202,26 @@
   </div>
 
   <script>
-    (function smartGisParentGateway() {
+    (function smartGisParentGatewayR2() {
       'use strict';
+
+      // R2: kompatibel dengan nested iframe Google Apps Script + event origin googleusercontent/null.
 
       const APP_URL = 'https://script.google.com/macros/s/AKfycbzDMAArlLEaMOlq-Y6f-pRbX-Qg4aMLikRlaPOa92TtObYqjiWFnHZmQPmEcCQDLq5aoQ/exec';
 
-      const GOOGLE_SCRIPT_ORIGIN_RE = /^https:\/\/([a-z0-9-]+\.)*(script\.google\.com|googleusercontent\.com)$/i;
+      const GOOGLE_SCRIPT_ORIGIN_RE = /^https:\/\/([a-z0-9-]+\.)*(script\.google\.com|googleusercontent\.com|script\.googleusercontent\.com)$/i;
+
+      function isAllowedChildMessageOrigin(origin, data) {
+        if (GOOGLE_SCRIPT_ORIGIN_RE.test(origin || '')) return true;
+
+        // Apps Script sandbox tertentu dapat mengirim event dengan origin "null".
+        // Payload tetap harus menyatakan parentOrigin sama dengan domain gateway ini.
+        if ((origin === 'null' || origin === '') && data && data.parentOrigin === window.location.origin) {
+          return true;
+        }
+
+        return false;
+      }
       const queryString = window.location.search || '';
       const hashString = window.location.hash || '';
       const targetUrl = APP_URL + queryString + hashString;
@@ -285,7 +299,7 @@
           return;
         }
 
-        if (!GOOGLE_SCRIPT_ORIGIN_RE.test(event.origin)) {
+        if (!isAllowedChildMessageOrigin(event.origin, data)) {
           return;
         }
 
@@ -306,7 +320,7 @@
       frame.src = targetUrl;
       startHandshakeLoop();
 
-      watchdogTimer = window.setTimeout(showLoadError, 12000);
+      watchdogTimer = window.setTimeout(showLoadError, 20000);
     })();
   </script>
 </body>
