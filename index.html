@@ -270,42 +270,100 @@
     /* ─────────────────────────────────────────────────────────────
        Muat iframe setelah DOM siap
     ───────────────────────────────────────────────────────────── */
-    var iframe        = document.getElementById('smartgis-frame');
+    var iframe         = document.getElementById('smartgis-frame');
     var loadingOverlay = document.getElementById('loading-overlay');
     var loadingStatus  = document.getElementById('loading-status');
     var errorOverlay   = document.getElementById('error-overlay');
 
-    var LOAD_TIMEOUT_MS = 30000; // 30 detik timeout
-    var loadTimer;
+    /* ─────────────────────────────────────────────────────────────
+       DETEKSI KEBERHASILAN EMBEDDING — postMessage handshake
+       ─────────────────────────────────────────────────────────────
+       CATATAN PENTING: event 'load' pada <iframe> TETAP terpicu
+       walau GAS gagal me-render Index.html (mis. GAS menampilkan
+       halaman error internal "Google Drive – file tidak ada" akibat
+       pembatasan cookie third-party browser pada mode iframe lintas
+       domain). Karena itu 'load' TIDAK BISA dipakai sebagai penanda
+       sukses.
 
-    function onFrameLoad() {
-      clearTimeout(loadTimer);
+       Solusi: Frame Guard di Index.html GAS mengirim postMessage
+       { source:'ecosmartgis', status:'ready' } begitu ia berhasil
+       berjalan (lihat notifyReady_ di Index.html). Jika sinyal itu
+       tidak diterima dalam READY_TIMEOUT_MS, disimpulkan embedding
+       gagal — gateway otomatis fallback redirect penuh ke URL GAS
+       langsung (address bar akan berpindah ke script.google.com,
+       tetapi pengguna tetap mendapatkan aplikasi yang berfungsi,
+       alih-alih halaman error Google yang membingungkan).
+    ───────────────────────────────────────────────────────────── */
+    var READY_TIMEOUT_MS = 10000;  // 10 detik — <head> GAS memuat banyak script CDN
+                                    // (Leaflet, geoman, shpjs, dll.) yang blocking render,
+                                    // jadi beri ruang untuk jaringan lambat sebelum fallback
+    var FALLBACK_DELAY_MS = 1200;  // jeda agar pesan sempat terbaca sebelum redirect
+    var readyTimer;
+    var iframeReady = false;
+    var fallbackTriggered = false;
+
+    function isTrustedOrigin(origin) {
+      /* Origin pengirim postMessage adalah domain sandbox internal GAS
+       * ("*-script.googleusercontent.com") atau script.google.com itu
+       * sendiri — BUKAN domain gateway ini, karena pesan dikirim dari
+       * dalam iframe (lihat catatan arsitektur nested-iframe GAS).   */
+      return /^https:\/\/([a-z0-9.-]*\.)?script\.google(usercontent)?\.com$/i.test(origin || '');
+    }
+
+    function hideLoadingOverlay() {
       loadingOverlay.classList.add('hidden');
     }
 
+    function doFallbackRedirect(reason) {
+      if (fallbackTriggered) return;
+      fallbackTriggered = true;
+      clearTimeout(readyTimer);
+      loadingStatus.textContent =
+        'Mode tampilan resmi tidak didukung browser ini, mengalihkan ke SmartGIS...';
+      setTimeout(function () {
+        window.location.href = targetUrl;
+      }, FALLBACK_DELAY_MS);
+    }
+
+    window.addEventListener('message', function (ev) {
+      if (!isTrustedOrigin(ev.origin)) return;
+      var data = ev.data;
+      if (data && data.source === 'ecosmartgis' && data.status === 'ready') {
+        iframeReady = true;
+        fallbackTriggered = true; // cegah fallback redirect menyusul setelah sukses
+        clearTimeout(readyTimer);
+        hideLoadingOverlay();
+      }
+    });
+
+    function onFrameLoad() {
+      /* iframe selesai memuat respons HTTP — belum tentu berarti sukses,
+       * lihat catatan di atas. Cukup perbarui status sambil menunggu
+       * sinyal 'ready' dari Frame Guard GAS.                           */
+      if (!iframeReady && !fallbackTriggered) {
+        loadingStatus.textContent = 'Memvalidasi respons sistem...';
+      }
+    }
+
     function onFrameError() {
-      clearTimeout(loadTimer);
-      loadingOverlay.classList.add('hidden');
+      /* Kegagalan jaringan level iframe (mis. DNS gagal) — bukan kasus
+       * halaman error Google yang tetap mengirim respons HTTP valid.
+       * Untuk kasus ini fallback redirect tidak akan menolong karena
+       * URL GAS memang tidak terjangkau, jadi tampilkan error overlay. */
+      clearTimeout(readyTimer);
+      hideLoadingOverlay();
       errorOverlay.classList.add('visible');
     }
 
     iframe.addEventListener('load',  onFrameLoad);
     iframe.addEventListener('error', onFrameError);
 
-    // Timeout fallback jika load event tidak terpicu
-    loadTimer = setTimeout(function() {
-      if (!loadingOverlay.classList.contains('hidden')) {
-        loadingStatus.textContent = 'Memakan waktu lebih lama dari biasanya...';
-        // Paksa sembunyikan loading setelah 30 detik
-        setTimeout(function() {
-          loadingOverlay.classList.add('hidden');
-        }, 5000);
-      }
-    }, LOAD_TIMEOUT_MS);
-
-    // Mulai muat iframe
+    // Mulai muat iframe + mulai hitung mundur menunggu sinyal 'ready'
     loadingStatus.textContent = 'Memuat EcoSmartGIS Production...';
     iframe.src = targetUrl;
+    readyTimer = setTimeout(function () {
+      if (!iframeReady) doFallbackRedirect('ready_timeout');
+    }, READY_TIMEOUT_MS);
   </script>
 
   <!-- Fallback tanpa JavaScript — meta refresh langsung ke GAS URL -->
