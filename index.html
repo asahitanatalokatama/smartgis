@@ -184,11 +184,10 @@
         <div class="logo">E</div>
         <h1>EcoSmartGIS RTH</h1>
         <p>
-          Memuat SmartGIS dari domain resmi. Validasi domain sedang dilakukan
-          untuk menjaga akses aplikasi tetap terkendali.
+          Validasi domain.. mohon tunggu...
         </p>
         <div class="spinner" aria-hidden="true"></div>
-        <div class="status" id="statusText">Menghubungkan ke SmartGIS...</div>
+        <div class="status" id="statusText">Validasi domain.. mohon tunggu...</div>
         <div class="actions">
           <button class="button" type="button" id="reloadButton">Muat Ulang</button>
           <a class="button secondary" id="openDirectButton" href="#" target="_blank" rel="noopener">Buka Tab Baru</a>
@@ -207,7 +206,7 @@
 
       // R2: kompatibel dengan nested iframe Google Apps Script + event origin googleusercontent/null.
 
-      const APP_URL = 'https://script.google.com/macros/s/AKfycbzDMAArlLEaMOlq-Y6f-pRbX-Qg4aMLikRlaPOa92TtObYqjiWFnHZmQPmEcCQDLq5aoQ/exec';
+      const APP_URL = 'https://script.google.com/macros/s/AKfycbzDMAArILeaMOlq-Y6f-pRbX-Qg4aMLikRlaPOa92TtObYqjiWFnHZmQPmEcCQDLq5aoQ/exec';
 
       const GOOGLE_SCRIPT_ORIGIN_RE = /^https:\/\/([a-z0-9-]+\.)*(script\.google\.com|googleusercontent\.com|script\.googleusercontent\.com)$/i;
 
@@ -277,14 +276,14 @@
         approvedByChild = true;
         stopHandshakeLoop();
         if (watchdogTimer) window.clearTimeout(watchdogTimer);
-        setStatus('SmartGIS berhasil divalidasi. Membuka aplikasi...');
+        setStatus('Validasi domain berhasil. Membuka SmartGIS...');
         loading.style.display = 'none';
       }
 
       function showLoadError() {
         if (approvedByChild) return;
         stopHandshakeLoop();
-        setStatus('Validasi iframe belum diterima. Silakan muat ulang halaman.');
+        setStatus('Validasi domain belum selesai. Silakan muat ulang halaman.');
         errorBox.style.display = 'block';
       }
 
@@ -309,7 +308,7 @@
       }, false);
 
       frame.addEventListener('load', function handleFrameLoad() {
-        setStatus('SmartGIS dimuat. Menunggu validasi domain...');
+        setStatus('Validasi domain.. mohon tunggu...');
         startHandshakeLoop();
       });
 
