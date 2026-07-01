@@ -1,385 +1,313 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="id">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>EcoSmartGIS – Ekosistem Data RTH Kabupaten Tangerang</title>
-  <link rel="icon" type="image/png" href="./favicon.png" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
 
-  <!-- ═══════════════════════════════════════════════════════════════
-       EcoSmartGIS RTH – Official Domain Gateway (Iframe Mode)
-       Bappeda Kabupaten Tangerang | Versi: Gateway v1.1
-       
-       Arsitektur:
-         Domain resmi (GitHub Pages / DISKOMINFO) → iframe → GAS Production
-         
-       Keamanan:
-         - Tidak ada credential di source ini (AC-005 PRD)
-         - GAS production dikontrol via Frame Guard di Index.html GAS
-         - HTTPS wajib di kedua sisi
-         - referrerpolicy="origin" memastikan referrer terkirim ke GAS
-           sehingga Frame Guard dapat memvalidasi domain ini
-  ═══════════════════════════════════════════════════════════════ -->
+  <title>SmartGIS - Ekosistem RTH</title>
+  <link rel="icon" type="image/png" href="./favicon.png" />
 
   <style>
     :root {
-      --bg:     #07111f;
-      --green:  #22c55e;
-      --text:   #f8fafc;
-      --muted:  rgba(248,250,252,0.65);
-      --glass:  rgba(255,255,255,0.08);
-      --border: rgba(255,255,255,0.15);
+      --bg-1: #07111f;
+      --bg-2: #0f2f25;
+      --glass: rgba(255, 255, 255, 0.11);
+      --glass-border: rgba(255, 255, 255, 0.20);
+      --text: #ffffff;
+      --muted: rgba(255, 255, 255, 0.74);
+      --green: #22c55e;
+      --cyan: #0ea5e9;
+      --danger: #fb7185;
     }
 
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    * {
+      box-sizing: border-box;
+    }
 
-    html, body {
-      width: 100%; height: 100%;
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-      background: var(--bg);
-      color: var(--text);
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      background: var(--bg-1);
       overflow: hidden;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
     }
 
-    /* ── Header tipis branding ─────────────────────────────────── */
-    #gateway-header {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 999;
-      height: 36px;
-      background: linear-gradient(90deg, #071a0f, #0a1f1a);
-      border-bottom: 1px solid rgba(34,197,94,0.25);
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 16px;
-      backdrop-filter: blur(8px);
-    }
-
-    #gateway-header .brand {
-      display: flex; align-items: center; gap: 8px;
-      font-size: 12px; font-weight: 700; letter-spacing: 0.04em;
-      color: var(--green);
-    }
-
-    #gateway-header .brand .dot {
-      width: 7px; height: 7px; border-radius: 50%;
-      background: var(--green);
-      box-shadow: 0 0 6px var(--green);
-      animation: pulse 2s ease-in-out infinite;
-    }
-
-    #gateway-header .domain-pill {
-      font-size: 11px; color: var(--muted);
-      background: var(--glass);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 2px 10px;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50%       { opacity: 0.4; }
-    }
-
-    /* ── Iframe utama ──────────────────────────────────────────── */
-    #smartgis-frame {
+    #wrap {
       position: fixed;
-      top: 36px; left: 0; right: 0; bottom: 0;
-      width: 100%; height: calc(100% - 36px);
-      border: none;
-      background: var(--bg);
-    }
-
-    /* ── Loading overlay ───────────────────────────────────────── */
-    #loading-overlay {
-      position: fixed;
-      top: 36px; left: 0; right: 0; bottom: 0;
+      inset: 0;
       background:
-        radial-gradient(circle at 20% 30%, rgba(34,197,94,0.18), transparent 40%),
-        radial-gradient(circle at 80% 70%, rgba(14,165,233,0.14), transparent 40%),
-        var(--bg);
-      display: flex; align-items: center; justify-content: center;
-      z-index: 10;
-      transition: opacity 0.4s ease;
+        radial-gradient(circle at 18% 20%, rgba(34, 197, 94, 0.22), transparent 34%),
+        radial-gradient(circle at 82% 78%, rgba(14, 165, 233, 0.18), transparent 36%),
+        linear-gradient(135deg, var(--bg-1), var(--bg-2));
     }
 
-    #loading-overlay.hidden {
-      opacity: 0; pointer-events: none;
+    #frame {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: 0;
+      background: transparent;
     }
 
-    .loading-card {
-      text-align: center;
-      padding: 40px 32px;
-      border-radius: 24px;
+    #loading {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      color: var(--text);
+      background: rgba(0, 0, 0, 0.34);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      z-index: 20;
+      padding: 24px;
+    }
+
+    .panel {
+      width: min(520px, 100%);
+      padding: 32px 28px;
+      border-radius: 28px;
       background: var(--glass);
-      border: 1px solid var(--border);
-      backdrop-filter: blur(20px);
-      box-shadow: 0 24px 80px rgba(0,0,0,0.4);
-      max-width: 360px; width: 90%;
+      border: 1px solid var(--glass-border);
+      box-shadow:
+        0 28px 90px rgba(0, 0, 0, 0.38),
+        inset 0 1px 0 rgba(255, 255, 255, 0.22);
+      text-align: center;
     }
 
-    .loading-logo {
-      width: 68px; height: 68px;
-      background: linear-gradient(145deg, rgba(34,197,94,0.95), rgba(14,165,233,0.8));
+    .logo {
+      width: 66px;
+      height: 66px;
+      margin: 0 auto 18px;
       border-radius: 20px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 30px; font-weight: 900;
-      margin: 0 auto 20px;
-      box-shadow: 0 16px 40px rgba(34,197,94,0.3);
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, var(--green), var(--cyan));
+      box-shadow: 0 18px 50px rgba(34, 197, 94, 0.24);
+      color: #fff;
+      font-size: 30px;
+      font-weight: 900;
     }
 
-    .loading-title {
-      font-size: 20px; font-weight: 700;
-      letter-spacing: -0.02em;
-      margin-bottom: 8px;
+    h1 {
+      margin: 0;
+      font-size: clamp(22px, 2.6vw, 30px);
+      line-height: 1.15;
+      letter-spacing: -0.035em;
     }
 
-    .loading-sub {
-      font-size: 13px; color: var(--muted);
-      line-height: 1.6; margin-bottom: 24px;
+    p {
+      margin: 12px auto 0;
+      max-width: 420px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.65;
     }
 
     .spinner {
-      width: 38px; height: 38px;
-      border: 3px solid rgba(255,255,255,0.15);
-      border-top-color: var(--green);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      margin: 0 auto 14px;
+      width: 44px;
+      height: 44px;
+      margin: 22px auto 0;
+      border-radius: 999px;
+      border: 4px solid rgba(255, 255, 255, 0.20);
+      border-top-color: rgba(34, 197, 94, 0.96);
+      animation: spin 0.85s linear infinite;
     }
 
-    .loading-status {
-      font-size: 12px; color: var(--muted);
-      letter-spacing: 0.02em;
+    .status {
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
     }
 
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* ── Error state ───────────────────────────────────────────── */
-    #error-overlay {
-      display: none;
-      position: fixed;
-      top: 36px; left: 0; right: 0; bottom: 0;
-      background: var(--bg);
-      align-items: center; justify-content: center;
-      z-index: 20;
+    .actions {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 22px;
     }
 
-    #error-overlay.visible { display: flex; }
-
-    .error-card {
-      text-align: center;
-      padding: 40px 32px;
-      border-radius: 24px;
-      background: rgba(239,68,68,0.08);
-      border: 1px solid rgba(239,68,68,0.25);
-      max-width: 400px; width: 90%;
-    }
-
-    .error-card h2 { color: #f87171; font-size: 18px; margin-bottom: 12px; }
-    .error-card p  { color: var(--muted); font-size: 13px; line-height: 1.7; margin-bottom: 20px; }
-
-    .btn-retry {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 10px 22px; border-radius: 99px;
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      padding: 0 18px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.22);
       background: linear-gradient(135deg, #22c55e, #15803d);
-      color: #fff; font-size: 13px; font-weight: 700;
-      border: none; cursor: pointer;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 800;
       text-decoration: none;
+      cursor: pointer;
+      box-shadow: 0 14px 36px rgba(34, 197, 94, 0.22);
+    }
+
+    .button.secondary {
+      background: rgba(255, 255, 255, 0.10);
+      box-shadow: none;
+    }
+
+    .error-box {
+      display: none;
+      margin-top: 18px;
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(251, 113, 133, 0.12);
+      border: 1px solid rgba(251, 113, 133, 0.30);
+      color: rgba(255, 255, 255, 0.82);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
     }
   </style>
 </head>
-
 <body>
+  <div id="wrap">
+    <iframe
+      id="frame"
+      title="EcoSmartGIS RTH"
+      allow="geolocation; microphone; clipboard-read; clipboard-write; fullscreen"
+      referrerpolicy="strict-origin-when-cross-origin"
+    ></iframe>
 
-  <!-- ── Header branding ────────────────────────────────────── -->
-  <header id="gateway-header">
-    <div class="brand">
-      <span class="dot"></span>
-      EcoSmartGIS RTH &nbsp;·&nbsp; Bappeda Kabupaten Tangerang
-    </div>
-    <span class="domain-pill" id="domain-label">Memuat...</span>
-  </header>
-
-  <!-- ── Loading overlay (ditampilkan sampai iframe selesai load) ── -->
-  <div id="loading-overlay" role="status" aria-live="polite">
-    <div class="loading-card">
-      <div class="loading-logo">E</div>
-      <div class="loading-title">EcoSmartGIS RTH</div>
-      <div class="loading-sub">
-        Bappeda Kabupaten Tangerang<br>
-        Bidang Perencanaan Infrastruktur dan Kewilayahan
-      </div>
-      <div class="spinner" aria-hidden="true"></div>
-      <div class="loading-status" id="loading-status">
-        Menghubungkan ke sistem SmartGIS...
-      </div>
-    </div>
-  </div>
-
-  <!-- ── Error overlay ─────────────────────────────────────── -->
-  <div id="error-overlay" role="alert">
-    <div class="error-card">
-      <h2>⚠ Gagal Memuat SmartGIS</h2>
-      <p>
-        Sistem SmartGIS tidak dapat dimuat saat ini.<br>
-        Pastikan koneksi internet aktif dan coba lagi.
-      </p>
-      <a class="btn-retry" href="./" id="retry-btn">↺ Coba Lagi</a>
+    <div id="loading">
+      <section class="panel" aria-label="SmartGIS Loader">
+        <div class="logo">E</div>
+        <h1>EcoSmartGIS RTH</h1>
+        <p>
+          Memuat SmartGIS dari domain resmi. Validasi domain sedang dilakukan
+          untuk menjaga akses aplikasi tetap terkendali.
+        </p>
+        <div class="spinner" aria-hidden="true"></div>
+        <div class="status" id="statusText">Menghubungkan ke SmartGIS...</div>
+        <div class="actions">
+          <button class="button" type="button" id="reloadButton">Muat Ulang</button>
+          <a class="button secondary" id="openDirectButton" href="#" target="_blank" rel="noopener">Buka Tab Baru</a>
+        </div>
+        <div class="error-box" id="errorBox">
+          SmartGIS belum dapat dimuat pada iframe. Pastikan domain ini sudah masuk allowlist
+          pada Frame Guard Apps Script, lalu refresh halaman.
+        </div>
+      </section>
     </div>
   </div>
-
-  <!-- ── iframe utama — SmartGIS Production ────────────────── -->
-  <!--
-    referrerpolicy="origin" : memastikan header Referer dikirim ke GAS
-      → Frame Guard di Index.html GAS dapat memvalidasi domain ini
-    sandbox tidak digunakan : diperlukan google.script.run & cookie
-    allow-same-origin      : diperlukan untuk google.script.run
-  -->
-  <iframe
-    id="smartgis-frame"
-    title="EcoSmartGIS – Ruang Terbuka Hijau Kabupaten Tangerang"
-    referrerpolicy="origin"
-    loading="lazy"
-    src="about:blank"
-    aria-label="Aplikasi EcoSmartGIS RTH"
-  ></iframe>
 
   <script>
-    /* ─────────────────────────────────────────────────────────────
-       KONFIGURASI — Satu-satunya lokasi yang perlu diperbarui
-       jika URL GAS production berubah.
-    ───────────────────────────────────────────────────────────── */
-    var SMARTGIS_PRODUCTION_URL =
-      'https://script.google.com/macros/s/' +
-      'AKfycbzDMAArILeaMOlq-Y6f-pRbX-Qg4aMLikRlaPOa92TtObYqjiWFnHZmQPmEcCQDLq5aoQ' +
-      '/exec';
+    (function smartGisParentGateway() {
+      'use strict';
 
-    /* ─────────────────────────────────────────────────────────────
-       Build target URL — teruskan query string & hash jika ada
-       Contoh: domain.com?mode=public#dashboard
-         → GAS_URL?mode=public#dashboard
-    ───────────────────────────────────────────────────────────── */
-    var qs  = window.location.search || '';
-    var hsh = window.location.hash  || '';
-    var targetUrl = SMARTGIS_PRODUCTION_URL + qs + hsh;
+      const APP_URL = 'https://script.google.com/macros/s/AKfycbzDMAArlLEaMOlq-Y6f-pRbX-Qg4aMLikRlaPOa92TtObYqjiWFnHZmQPmEcCQDLq5aoQ/exec';
 
-    /* ─────────────────────────────────────────────────────────────
-       Tampilkan domain aktif di header pill
-    ───────────────────────────────────────────────────────────── */
-    document.getElementById('domain-label').textContent =
-      window.location.hostname;
+      const GOOGLE_SCRIPT_ORIGIN_RE = /^https:\/\/([a-z0-9-]+\.)*(script\.google\.com|googleusercontent\.com)$/i;
+      const queryString = window.location.search || '';
+      const hashString = window.location.hash || '';
+      const targetUrl = APP_URL + queryString + hashString;
+      const handshakeNonce = String(Date.now()) + '-' + Math.random().toString(36).slice(2);
 
-    /* ─────────────────────────────────────────────────────────────
-       Muat iframe setelah DOM siap
-    ───────────────────────────────────────────────────────────── */
-    var iframe         = document.getElementById('smartgis-frame');
-    var loadingOverlay = document.getElementById('loading-overlay');
-    var loadingStatus  = document.getElementById('loading-status');
-    var errorOverlay   = document.getElementById('error-overlay');
+      const frame = document.getElementById('frame');
+      const loading = document.getElementById('loading');
+      const statusText = document.getElementById('statusText');
+      const errorBox = document.getElementById('errorBox');
+      const reloadButton = document.getElementById('reloadButton');
+      const openDirectButton = document.getElementById('openDirectButton');
 
-    /* ─────────────────────────────────────────────────────────────
-       DETEKSI KEBERHASILAN EMBEDDING — postMessage handshake
-       ─────────────────────────────────────────────────────────────
-       CATATAN PENTING: event 'load' pada <iframe> TETAP terpicu
-       walau GAS gagal me-render Index.html (mis. GAS menampilkan
-       halaman error internal "Google Drive – file tidak ada" akibat
-       pembatasan cookie third-party browser pada mode iframe lintas
-       domain). Karena itu 'load' TIDAK BISA dipakai sebagai penanda
-       sukses.
+      let approvedByChild = false;
+      let handshakeTimer = null;
+      let watchdogTimer = null;
 
-       Solusi: Frame Guard di Index.html GAS mengirim postMessage
-       { source:'ecosmartgis', status:'ready' } begitu ia berhasil
-       berjalan (lihat notifyReady_ di Index.html). Jika sinyal itu
-       tidak diterima dalam READY_TIMEOUT_MS, disimpulkan embedding
-       gagal — gateway otomatis fallback redirect penuh ke URL GAS
-       langsung (address bar akan berpindah ke script.google.com,
-       tetapi pengguna tetap mendapatkan aplikasi yang berfungsi,
-       alih-alih halaman error Google yang membingungkan).
-    ───────────────────────────────────────────────────────────── */
-    var READY_TIMEOUT_MS = 10000;  // 10 detik — <head> GAS memuat banyak script CDN
-                                    // (Leaflet, geoman, shpjs, dll.) yang blocking render,
-                                    // jadi beri ruang untuk jaringan lambat sebelum fallback
-    var FALLBACK_DELAY_MS = 1200;  // jeda agar pesan sempat terbaca sebelum redirect
-    var readyTimer;
-    var iframeReady = false;
-    var fallbackTriggered = false;
+      openDirectButton.href = targetUrl;
 
-    function isTrustedOrigin(origin) {
-      /* Origin pengirim postMessage adalah domain sandbox internal GAS
-       * ("*-script.googleusercontent.com") atau script.google.com itu
-       * sendiri — BUKAN domain gateway ini, karena pesan dikirim dari
-       * dalam iframe (lihat catatan arsitektur nested-iframe GAS).   */
-      return /^https:\/\/([a-z0-9.-]*\.)?script\.google(usercontent)?\.com$/i.test(origin || '');
-    }
-
-    function hideLoadingOverlay() {
-      loadingOverlay.classList.add('hidden');
-    }
-
-    function doFallbackRedirect(reason) {
-      if (fallbackTriggered) return;
-      fallbackTriggered = true;
-      clearTimeout(readyTimer);
-      loadingStatus.textContent =
-        'Mode tampilan resmi tidak didukung browser ini, mengalihkan ke SmartGIS...';
-      setTimeout(function () {
-        window.location.href = targetUrl;
-      }, FALLBACK_DELAY_MS);
-    }
-
-    window.addEventListener('message', function (ev) {
-      if (!isTrustedOrigin(ev.origin)) return;
-      var data = ev.data;
-      if (data && data.source === 'ecosmartgis' && data.status === 'ready') {
-        iframeReady = true;
-        fallbackTriggered = true; // cegah fallback redirect menyusul setelah sukses
-        clearTimeout(readyTimer);
-        hideLoadingOverlay();
+      function setStatus(text) {
+        statusText.textContent = text;
       }
-    });
 
-    function onFrameLoad() {
-      /* iframe selesai memuat respons HTTP — belum tentu berarti sukses,
-       * lihat catatan di atas. Cukup perbarui status sambil menunggu
-       * sinyal 'ready' dari Frame Guard GAS.                           */
-      if (!iframeReady && !fallbackTriggered) {
-        loadingStatus.textContent = 'Memvalidasi respons sistem...';
+      function sendHandshake() {
+        try {
+          if (!frame.contentWindow) return;
+
+          frame.contentWindow.postMessage({
+            type: 'SMARTGIS_PARENT_HANDSHAKE',
+            app: 'EcoSmartGIS RTH',
+            parentOrigin: window.location.origin,
+            nonce: handshakeNonce,
+            timestamp: Date.now()
+          }, '*');
+        } catch (error) {
+          // Non-fatal. Timer akan mencoba ulang.
+        }
       }
-    }
 
-    function onFrameError() {
-      /* Kegagalan jaringan level iframe (mis. DNS gagal) — bukan kasus
-       * halaman error Google yang tetap mengirim respons HTTP valid.
-       * Untuk kasus ini fallback redirect tidak akan menolong karena
-       * URL GAS memang tidak terjangkau, jadi tampilkan error overlay. */
-      clearTimeout(readyTimer);
-      hideLoadingOverlay();
-      errorOverlay.classList.add('visible');
-    }
+      function startHandshakeLoop() {
+        stopHandshakeLoop();
+        sendHandshake();
+        handshakeTimer = window.setInterval(sendHandshake, 350);
+      }
 
-    iframe.addEventListener('load',  onFrameLoad);
-    iframe.addEventListener('error', onFrameError);
+      function stopHandshakeLoop() {
+        if (handshakeTimer) {
+          window.clearInterval(handshakeTimer);
+          handshakeTimer = null;
+        }
+      }
 
-    // Mulai muat iframe + mulai hitung mundur menunggu sinyal 'ready'
-    loadingStatus.textContent = 'Memuat EcoSmartGIS Production...';
-    iframe.src = targetUrl;
-    readyTimer = setTimeout(function () {
-      if (!iframeReady) doFallbackRedirect('ready_timeout');
-    }, READY_TIMEOUT_MS);
+      function markApproved() {
+        approvedByChild = true;
+        stopHandshakeLoop();
+        if (watchdogTimer) window.clearTimeout(watchdogTimer);
+        setStatus('SmartGIS berhasil divalidasi. Membuka aplikasi...');
+        loading.style.display = 'none';
+      }
+
+      function showLoadError() {
+        if (approvedByChild) return;
+        stopHandshakeLoop();
+        setStatus('Validasi iframe belum diterima. Silakan muat ulang halaman.');
+        errorBox.style.display = 'block';
+      }
+
+      window.addEventListener('message', function receiveSmartGisMessage(event) {
+        const data = event.data || {};
+
+        if (!data || data.type !== 'SMARTGIS_CHILD_APPROVED') {
+          return;
+        }
+
+        if (data.nonce && data.nonce !== handshakeNonce) {
+          return;
+        }
+
+        if (!GOOGLE_SCRIPT_ORIGIN_RE.test(event.origin)) {
+          return;
+        }
+
+        if (data.approved === true) {
+          markApproved();
+        }
+      }, false);
+
+      frame.addEventListener('load', function handleFrameLoad() {
+        setStatus('SmartGIS dimuat. Menunggu validasi domain...');
+        startHandshakeLoop();
+      });
+
+      reloadButton.addEventListener('click', function reloadGateway() {
+        window.location.reload();
+      });
+
+      frame.src = targetUrl;
+      startHandshakeLoop();
+
+      watchdogTimer = window.setTimeout(showLoadError, 12000);
+    })();
   </script>
-
-  <!-- Fallback tanpa JavaScript — meta refresh langsung ke GAS URL -->
-  <noscript>
-    <meta http-equiv="refresh"
-      content="0;url=https://script.google.com/macros/s/AKfycbzDMAArILeaMOlq-Y6f-pRbX-Qg4aMLikRlaPOa92TtObYqjiWFnHZmQPmEcCQDLq5aoQ/exec">
-    <style>
-      #smartgis-frame { top: 0; height: 100%; }
-      #gateway-header, #loading-overlay { display: none; }
-    </style>
-    <p style="color:#fff;padding:20px;font-family:sans-serif">
-      Mengalihkan ke EcoSmartGIS...
-      <a href="https://script.google.com/macros/s/AKfycbzDMAArILeaMOlq-Y6f-pRbX-Qg4aMLikRlaPOa92TtObYqjiWFnHZmQPmEcCQDLq5aoQ/exec"
-         style="color:#22c55e">Klik di sini jika tidak otomatis</a>
-    </p>
-  </noscript>
-
 </body>
 </html>
