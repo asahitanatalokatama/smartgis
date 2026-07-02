@@ -126,7 +126,7 @@
   <iframe
     id="smartgis-frame"
     title="EcoSmartGIS RTH – Bappeda Kabupaten Tangerang"
-    allow="geolocation; clipboard-read; clipboard-write; fullscreen"
+    allow="geolocation; microphone; clipboard-read; clipboard-write; fullscreen"
     referrerpolicy="strict-origin-when-cross-origin"
     src="about:blank"
   ></iframe>
@@ -184,11 +184,8 @@
         if (GOOGLE_CHILD_ORIGIN_PATTERN.test(origin || '')) return true;
 
         // Pada sandbox tertentu, Apps Script dapat mengirim origin "null".
-        // Tetap valid hanya jika parentOrigin DAN nonce keduanya cocok.
-        if ((origin === 'null' || origin === '') &&
-            data &&
-            data.parentOrigin === window.location.origin &&
-            data.nonce === handshakeNonce) {
+        // Tetap valid hanya jika parentOrigin dan nonce cocok.
+        if ((origin === 'null' || origin === '') && data && data.parentOrigin === window.location.origin) {
           return true;
         }
 
@@ -244,7 +241,7 @@
         var data = event.data || {};
 
         if (!data || data.type !== 'SMARTGIS_CHILD_APPROVED') return;
-        if (!data.nonce || data.nonce !== handshakeNonce) return;
+        if (data.nonce && data.nonce !== handshakeNonce) return;
         if (!isAllowedChildOrigin(event.origin, data)) return;
 
         if (data.approved === true) markApproved();
