@@ -5,104 +5,265 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>EcoSmartGIS RTH – Bappeda Kabupaten Tangerang</title>
   <link rel="icon" type="image/png" href="./favicon.png" />
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    html, body {
-      width: 100%; height: 100%;
-      background: #07111f;
-      overflow: hidden;
-      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
     }
 
-    /* ── iframe: full viewport ──────────────────────────── */
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      background: #07111f;
+      overflow: hidden;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    }
+
     #smartgis-frame {
       position: fixed;
       inset: 0;
-      width: 100%; height: 100%;
-      border: none;
+      width: 100%;
+      height: 100%;
+      border: 0;
       background: #07111f;
     }
 
-    /* ── Loading overlay: hanya teks, tidak ada card ─────── */
     #loading-overlay {
       position: fixed;
       inset: 0;
-      background: #07111f;
+      z-index: 20;
       display: flex;
       align-items: center;
       justify-content: center;
-      z-index: 10;
-      pointer-events: none;
-      transition: opacity 0.5s ease;
+      flex-direction: column;
+      gap: 14px;
+      padding: 24px;
+      background:
+        radial-gradient(circle at 18% 20%, rgba(34, 197, 94, 0.18), transparent 34%),
+        radial-gradient(circle at 82% 78%, rgba(14, 165, 233, 0.14), transparent 36%),
+        linear-gradient(135deg, rgba(7, 17, 31, 0.96), rgba(15, 47, 37, 0.96));
+      color: rgba(255, 255, 255, 0.78);
+      text-align: center;
+      transition: opacity 0.45s ease, visibility 0.45s ease;
     }
 
     #loading-overlay.hidden {
       opacity: 0;
+      visibility: hidden;
       pointer-events: none;
     }
 
+    .spinner {
+      width: 42px;
+      height: 42px;
+      border-radius: 999px;
+      border: 4px solid rgba(255, 255, 255, 0.18);
+      border-top-color: rgba(34, 197, 94, 0.96);
+      animation: spin 0.85s linear infinite;
+    }
+
     #loading-text {
-      color: rgba(255, 255, 255, 0.60);
       font-size: 14px;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.03em;
+      line-height: 1.55;
+    }
+
+    #error-box {
+      display: none;
+      width: min(560px, 100%);
+      margin-top: 10px;
+      padding: 16px 18px;
+      border-radius: 18px;
+      border: 1px solid rgba(251, 113, 133, 0.36);
+      background: rgba(251, 113, 133, 0.12);
+      color: rgba(255, 255, 255, 0.86);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .actions {
+      display: none;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .actions.visible {
+      display: flex;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 40px;
+      padding: 0 18px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.20);
+      background: rgba(255, 255, 255, 0.12);
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 800;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .button.primary {
+      background: linear-gradient(135deg, #22c55e, #15803d);
+      box-shadow: 0 12px 32px rgba(34, 197, 94, 0.20);
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
     }
   </style>
 </head>
-<body>
 
+<body>
   <iframe
     id="smartgis-frame"
     title="EcoSmartGIS RTH – Bappeda Kabupaten Tangerang"
+    allow="geolocation; microphone; clipboard-read; clipboard-write; fullscreen"
     referrerpolicy="strict-origin-when-cross-origin"
     src="about:blank"
   ></iframe>
 
   <div id="loading-overlay">
-    <span id="loading-text">Validasi domain.. mohon tunggu...</span>
+    <div class="spinner" aria-hidden="true"></div>
+    <div id="loading-text">Validasi domain.. mohon tunggu...</div>
+    <div id="error-box">
+      SmartGIS belum mengirim validasi iframe. Pastikan file <b>06_FrameGuard.html</b>
+      di Apps Script sudah versi R2, domain GitHub masuk allowlist, dan deployment Apps Script
+      sudah dibuat sebagai <b>New version</b>.
+    </div>
+    <div class="actions" id="actions">
+      <button class="button primary" type="button" id="reload-button">Muat Ulang</button>
+      <a class="button" id="open-direct-button" href="#" target="_blank" rel="noopener">Buka Tab Baru</a>
+    </div>
   </div>
 
   <script>
-    /* ─────────────────────────────────────────────────────
-       KONFIGURASI — ganti hanya baris ini jika URL GAS berubah
-    ───────────────────────────────────────────────────── */
-    var SMARTGIS_URL =
-      'https://script.google.com/macros/s/' +
-      'AKfycbzDMAArILeaMOlq-Y6f-pRbX-Qg4aMLikRlaPOa92TtObYqjiWFnHZmQPmEcCQDLq5aoQ' +
-      '/exec';
+    (function smartGisGithubGateway() {
+      'use strict';
 
-    /* Teruskan query string & hash dari URL gateway ke GAS */
-    var targetUrl = SMARTGIS_URL +
-      (window.location.search || '') +
-      (window.location.hash  || '');
+      /*
+        URL Apps Script production yang benar.
+        Penting: deployment ID bersifat case-sensitive.
+        Jangan ubah huruf l kecil / L besar / I besar secara manual.
+      */
+      var SMARTGIS_URL = 'https://script.google.com/macros/s/AKfycbzDMAArlLEaMOlq-Y6f-pRbX-Qg4aMLikRlaPOa92TtObYqjiWFnHZmQPmEcCQDLq5aoQ/exec';
 
-    var frame   = document.getElementById('smartgis-frame');
-    var overlay = document.getElementById('loading-overlay');
+      var GOOGLE_CHILD_ORIGIN_PATTERN = /^https:\/\/([a-z0-9-]+\.)*(script\.google\.com|googleusercontent\.com|script\.googleusercontent\.com)$/i;
+      var queryString = window.location.search || '';
+      var hashString = window.location.hash || '';
+      var targetUrl = SMARTGIS_URL + queryString + hashString;
+      var handshakeNonce = String(Date.now()) + '-' + Math.random().toString(36).slice(2);
 
-    function hideOverlay() {
-      overlay.classList.add('hidden');
-    }
+      var frame = document.getElementById('smartgis-frame');
+      var overlay = document.getElementById('loading-overlay');
+      var loadingText = document.getElementById('loading-text');
+      var errorBox = document.getElementById('error-box');
+      var actions = document.getElementById('actions');
+      var reloadButton = document.getElementById('reload-button');
+      var openDirectButton = document.getElementById('open-direct-button');
 
-    /* Sembunyikan overlay begitu iframe selesai load */
-    frame.addEventListener('load', hideOverlay);
+      var approved = false;
+      var handshakeTimer = null;
+      var watchdogTimer = null;
 
-    /* Fallback: sembunyikan overlay setelah 15 detik
-       walau load event tidak terpicu                  */
-    var fallbackTimer = setTimeout(hideOverlay, 15000);
+      openDirectButton.href = targetUrl;
 
-    frame.addEventListener('load', function() {
-      clearTimeout(fallbackTimer);
-    });
+      function setText(message) {
+        loadingText.textContent = message;
+      }
 
-    /* Mulai muat iframe */
-    frame.src = targetUrl;
+      function isAllowedChildOrigin(origin, data) {
+        if (GOOGLE_CHILD_ORIGIN_PATTERN.test(origin || '')) return true;
+
+        // Pada sandbox tertentu, Apps Script dapat mengirim origin "null".
+        // Tetap valid hanya jika parentOrigin dan nonce cocok.
+        if ((origin === 'null' || origin === '') && data && data.parentOrigin === window.location.origin) {
+          return true;
+        }
+
+        return false;
+      }
+
+      function sendHandshake() {
+        try {
+          if (!frame.contentWindow) return;
+
+          frame.contentWindow.postMessage({
+            type: 'SMARTGIS_PARENT_HANDSHAKE',
+            app: 'EcoSmartGIS RTH',
+            parentOrigin: window.location.origin,
+            nonce: handshakeNonce,
+            timestamp: Date.now()
+          }, '*');
+        } catch (error) {
+          // Non-fatal. Akan dicoba ulang oleh interval.
+        }
+      }
+
+      function startHandshakeLoop() {
+        stopHandshakeLoop();
+        sendHandshake();
+        handshakeTimer = window.setInterval(sendHandshake, 350);
+      }
+
+      function stopHandshakeLoop() {
+        if (handshakeTimer) {
+          window.clearInterval(handshakeTimer);
+          handshakeTimer = null;
+        }
+      }
+
+      function markApproved() {
+        approved = true;
+        stopHandshakeLoop();
+        if (watchdogTimer) window.clearTimeout(watchdogTimer);
+        setText('SmartGIS berhasil divalidasi. Membuka aplikasi...');
+        overlay.classList.add('hidden');
+      }
+
+      function showError() {
+        if (approved) return;
+        stopHandshakeLoop();
+        setText('Validasi iframe belum diterima. Silakan muat ulang halaman.');
+        errorBox.style.display = 'block';
+        actions.classList.add('visible');
+      }
+
+      window.addEventListener('message', function receiveSmartGisMessage(event) {
+        var data = event.data || {};
+
+        if (!data || data.type !== 'SMARTGIS_CHILD_APPROVED') return;
+        if (data.nonce && data.nonce !== handshakeNonce) return;
+        if (!isAllowedChildOrigin(event.origin, data)) return;
+
+        if (data.approved === true) markApproved();
+      }, false);
+
+      frame.addEventListener('load', function handleFrameLoad() {
+        setText('SmartGIS dimuat. Menunggu validasi domain...');
+        startHandshakeLoop();
+      });
+
+      reloadButton.addEventListener('click', function reloadPage() {
+        window.location.reload();
+      });
+
+      frame.src = targetUrl;
+      startHandshakeLoop();
+      watchdogTimer = window.setTimeout(showError, 20000);
+    })();
   </script>
 
-  <!-- Fallback tanpa JavaScript -->
   <noscript>
-    <meta http-equiv="refresh"
-      content="0;url=https://script.google.com/macros/s/AKfycbzDMAArILeaMOlq-Y6f-pRbX-Qg4aMLikRlaPOa92TtObYqjiWFnHZmQPmEcCQDLq5aoQ/exec">
+    <meta http-equiv="refresh" content="0;url=https://script.google.com/macros/s/AKfycbzDMAArlLEaMOlq-Y6f-pRbX-Qg4aMLikRlaPOa92TtObYqjiWFnHZmQPmEcCQDLq5aoQ/exec">
   </noscript>
-
 </body>
 </html>
